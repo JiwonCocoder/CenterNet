@@ -103,7 +103,7 @@ class BaseDetector(object):
       scale_start_time = time.time()
       if not pre_processed:
         print("herehere")
-        images, meta = self.pre_process(image, scale, meta)
+        images, meta = self.pre_process(image, scale, meta) #meta는 c,s, output, calib 정보가 들어있음
       else:
         # import pdb; pdb.set_trace()
         images = pre_processed_images['images'][scale][0]

@@ -29,8 +29,8 @@ class DddDataset(data.Dataset):
     img_info = self.coco.loadImgs(ids=[img_id])[0]
     img_path = os.path.join(self.img_dir, img_info['file_name'])
     img = cv2.imread(img_path)
-    cv2.imshow("original", img)
-    cv2.waitKey()
+    #cv2.imshow("original", img)
+    #cv2.waitKey()
     if 'calib' in img_info:
       calib = np.array(img_info['calib'], dtype=np.float32)
     else:
@@ -59,8 +59,8 @@ class DddDataset(data.Dataset):
                          (self.opt.input_w, self.opt.input_h),
                          flags=cv2.INTER_LINEAR)
     #아마 cv2.warpAffine을 해야 cv2 img form으로 바뀌는 듯
-    cv2.imshow("augmentation", inp)
-    cv2.waitKey()
+    #cv2.imshow("augmentation", inp)
+    #cv2.waitKey()
     inp = (inp.astype(np.float32) / 255.)
     # if self.split == 'train' and not self.opt.no_color_aug:
     #   color_aug(self._data_rng, inp, self._eig_val, self._eig_vec)
@@ -71,11 +71,12 @@ class DddDataset(data.Dataset):
     #trans_output도 동일하게 affine_transform을 시켜줌.
     trans_output = get_affine_transform(
       c, s, 0, [self.opt.output_w, self.opt.output_h])
+   #opt.output크기를 내가 보고 싶어서
     out = cv2.warpAffine(img, trans_output,
                          (self.opt.output_w, self.opt.output_h),
                          flags=cv2.INTER_LINEAR)
-    cv2.imshow("output", out)
-    cv2.waitKey()
+    #cv2.imshow("output", out)
+    #cv2.waitKey()
     hm = np.zeros(
       (num_classes, self.opt.output_h, self.opt.output_w), dtype=np.float32)
     wh = np.zeros((self.max_objs, 2), dtype=np.float32)
@@ -96,6 +97,7 @@ class DddDataset(data.Dataset):
     gt_det = []
     for k in range(num_objs):
       ann = anns[k]
+      #bbox: 이제가 우리가 아는 (xmin, ymin, xmax, ymax)로 이루어진 행렬
       bbox = self._coco_box_to_bbox(ann['bbox'])
       cls_id = int(self.cat_ids[ann['category_id']])
       if cls_id <= -99:
@@ -104,12 +106,14 @@ class DddDataset(data.Dataset):
       #   bbox[[0, 2]] = width - bbox[[2, 0]] - 1
       bbox[:2] = affine_transform(bbox[:2], trans_output)
       bbox[2:] = affine_transform(bbox[2:], trans_output)
+      #np.clip함수를 사용하여 bbox행렬의 범위를 output_w, output-h 내의 범위로 바꿔줌
       bbox[[0, 2]] = np.clip(bbox[[0, 2]], 0, self.opt.output_w - 1)
       bbox[[1, 3]] = np.clip(bbox[[1, 3]], 0, self.opt.output_h - 1)
       h, w = bbox[3] - bbox[1], bbox[2] - bbox[0]
       if h > 0 and w > 0:
         radius = gaussian_radius((h, w))
         radius = max(0, int(radius))
+        #box의 center point를 구하는 공식이 맞음.
         ct = np.array(
           [(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2], dtype=np.float32)
         ct_int = ct.astype(np.int32)
@@ -124,24 +128,28 @@ class DddDataset(data.Dataset):
               draw_gaussian(hm[cc], ct, radius)
             hm[ignore_id, ct_int[1], ct_int[0]] = 0.9999
           continue
+       #heatmap의 center에다가 가우시안 필터를 씌워줌
         draw_gaussian(hm[cls_id], ct, radius)
-
-        wh[k] = 1. * w, 1. * h
+        wh[k] = 1. * w, 1. * h #h랑 w는 box size이다. 따라서 max_object(제한)된 곳에 쌓아둠.
+        #gt_det라는 list에다가 3d obj detector에 필요한 일자들을 넣어줌.
+        #center [x, y ,1], orientation, depth, diemsion(w,h,1을 배열로 만들고, 그걸 list로 만들어서 이 모든 걸 하나의 원소로 넣어줌
+        #append에다가 [] + [] 로 계속 연결시키면, 하나의 원소로 들어가는 듯.
         gt_det.append([ct[0], ct[1], 1] + \
                       self._alpha_to_8(self._convert_alpha(ann['alpha'])) + \
                       [ann['depth']] + (np.array(ann['dim']) / 1).tolist() + [cls_id])
         if self.opt.reg_bbox:
+          #가장 마지막 gt_det에 대해서 cls_id만을 제외한 원소값들을 사용하는데, 거기다라 [w,h] 를 붙인다음에 마지막에 cls_id가 오도록.
           gt_det[-1] = gt_det[-1][:-1] + [w, h] + [gt_det[-1][-1]]
         # if (not self.opt.car_only) or cls_id == 1: # Only estimate ADD for cars !!!
-        #indicator function
+        #indicator function : 아마 물체가 있따면
         if 1:
           alpha = self._convert_alpha(ann['alpha'])
           # print('img_id cls_id alpha rot_y', img_path, cls_id, alpha, ann['rotation_y'])
           if alpha < np.pi / 6. or alpha > 5 * np.pi / 6.:
-            rotbin[k, 0] = 1
-            rotres[k, 0] = alpha - (-0.5 * np.pi)    
+            rotbin[k, 0] = 1 #bin의 0 index를 1로
+            rotres[k, 0] = alpha - (-0.5 * np.pi)
           if alpha > -np.pi / 6. or alpha < -5 * np.pi / 6.:
-            rotbin[k, 1] = 1
+            rotbin[k, 1] = 1 #bin의 1 index를 1로
             rotres[k, 1] = alpha - (0.5 * np.pi)
           dep[k] = ann['depth']
           dim[k] = ann['dim']
@@ -171,11 +179,11 @@ class DddDataset(data.Dataset):
   def _alpha_to_8(self, alpha):
     # return [alpha, 0, 0, 0, 0, 0, 0, 0]
     ret = [0, 0, 0, 1, 0, 0, 0, 1]
-    if alpha < np.pi / 6. or alpha > 5 * np.pi / 6.:
+    if alpha < np.pi / 6. or alpha > 5 * np.pi / 6.: #앞쪽 bin이 담당하는 영역
       r = alpha - (-0.5 * np.pi)
       ret[1] = 1
       ret[2], ret[3] = np.sin(r), np.cos(r)
-    if alpha > -np.pi / 6. or alpha < -5 * np.pi / 6.:
+    if alpha > -np.pi / 6. or alpha < -5 * np.pi / 6.: #뒷쪽 bin이 담당하는 영역
       r = alpha - (0.5 * np.pi)
       ret[5] = 1
       ret[6], ret[7] = np.sin(r), np.cos(r)

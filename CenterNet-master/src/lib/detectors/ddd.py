@@ -29,22 +29,22 @@ class DddDetector(BaseDetector):
 
   def pre_process(self, image, scale, calib=None):
     height, width = image.shape[0:2]
-    
+    #original(1280, 384) → network input(1280, 384)
     inp_height, inp_width = self.opt.input_h, self.opt.input_w
     c = np.array([width / 2, height / 2], dtype=np.float32)
     if self.opt.keep_res:
       s = np.array([inp_width, inp_height], dtype=np.int32)
-    else:
+    else: #지금 해상도가 일치하지 않으므로, s에 original크기를 넣어주고
       s = np.array([width, height], dtype=np.int32)
-
+    #
     trans_input = get_affine_transform(c, s, 0, [inp_width, inp_height])
     resized_image = image #cv2.resize(image, (width, height))
     inp_image = cv2.warpAffine(
-      resized_image, trans_input, (inp_width, inp_height),
+      resized_image, trans_input, (inp_width, inp_height), #인자를 전달할 때, src, M, dst
       flags=cv2.INTER_LINEAR)
-    inp_image = (inp_image.astype(np.float32) / 255.)
-    inp_image = (inp_image - self.mean) / self.std
-    images = inp_image.transpose(2, 0, 1)[np.newaxis, ...]
+    inp_image = (inp_image.astype(np.float32) / 255.) # 픽셀값을 정규화시킴
+    inp_image = (inp_image - self.mean) / self.std #표준정규분포를 따르도록
+    images = inp_image.transpose(2, 0, 1)[np.newaxis, ...] #WHC 순으로
     calib = np.array(calib, dtype=np.float32) if calib is not None \
             else self.calib
     images = torch.from_numpy(images)

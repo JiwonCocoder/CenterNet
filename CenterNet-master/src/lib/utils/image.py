@@ -41,12 +41,13 @@ def get_affine_transform(center,
     rot_rad = np.pi * rot / 180
     src_dir = get_dir([0, src_w * -0.5], rot_rad)
     dst_dir = np.array([0, dst_w * -0.5], np.float32)
-
+    #dst의 경우, fixed된 network의 input/output_size에서, input/output이 scale과 shift에 의해 augment되어 바뀐 center point 및 다른 점들로의 매칭을
+    #성사시키 위해서 어파인 변환 행렬이 필요한 상황.
     src = np.zeros((3, 2), dtype=np.float32)
     dst = np.zeros((3, 2), dtype=np.float32)
     #1ST점 : center을 scale *shift만큼 이동시킨 점
     src[0, :] = center + scale_tmp * shift
-    #2nd점 :
+    #2nd점 : center를 + src(dst)_dir만큼 이동시킴
     src[1, :] = center + src_dir + scale_tmp * shift
     dst[0, :] = [dst_w * 0.5, dst_h * 0.5]
     dst[1, :] = np.array([dst_w * 0.5, dst_h * 0.5], np.float32) + dst_dir
@@ -120,7 +121,7 @@ def gaussian_radius(det_size, min_overlap=0.7):
 def gaussian2D(shape, sigma=1):
     m, n = [(ss - 1.) / 2. for ss in shape]
     y, x = np.ogrid[-m:m+1,-n:n+1]
-
+    #3x3은 총 9개의 경우의 수가 있으니까. 그래서 gaussian mask를 만든상황
     h = np.exp(-(x * x + y * y) / (2 * sigma * sigma))
     h[h < np.finfo(h.dtype).eps * h.max()] = 0
     return h
@@ -135,9 +136,12 @@ def draw_umich_gaussian(heatmap, center, radius, k=1):
     
   left, right = min(x, radius), min(width - x, radius + 1)
   top, bottom = min(y, radius), min(height - y, radius + 1)
-
+#heatmap에서 cetner위치에서 위로 top, 아래로 bottom, 왼쪽으로 left, 오른쪽으로 right만큼을
   masked_heatmap  = heatmap[y - top:y + bottom, x - left:x + right]
+  #gaussian mask에서 크기 - top만큼 위로, + bottom만큼, -left만큼 왼쪽, +right만큼 오른쪽을
   masked_gaussian = gaussian[radius - top:radius + bottom, radius - left:radius + right]
+  #
+
   if min(masked_gaussian.shape) > 0 and min(masked_heatmap.shape) > 0: # TODO debug
     np.maximum(masked_heatmap, masked_gaussian * k, out=masked_heatmap)
   return heatmap
