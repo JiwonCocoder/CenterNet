@@ -214,6 +214,7 @@ def compute_rot_loss(output, target_bin, target_res, mask):
     target_res = target_res.view(-1, 2)
     mask = mask.view(-1, 1)
     loss_bin1 = compute_bin_loss(output[:, 0:2], target_bin[:, 0], mask)
+    #target_bin의 두번째 열이 1이어야 output의 4,5번째 scalar를 사용하여 cross_entropy를 수행함.
     loss_bin2 = compute_bin_loss(output[:, 4:6], target_bin[:, 1], mask)
     loss_res = torch.zeros_like(loss_bin1)
     if target_bin[:, 0].nonzero().shape[0] > 0:

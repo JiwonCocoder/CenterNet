@@ -10,8 +10,8 @@ def _sigmoid(x):
   return y
 
 def _gather_feat(feat, ind, mask=None):
-    dim  = feat.size(2)
-    ind  = ind.unsqueeze(2).expand(ind.size(0), ind.size(1), dim)
+    dim = feat.size(2)
+    ind  = ind.unsqueeze(2).expand(ind.size(0), ind.size(1), dim) #unsqueeze는 인수로 받은 위치에 새로운 차원 1을 삽입한다.
     feat = feat.gather(1, ind)
     if mask is not None:
         mask = mask.unsqueeze(2).expand_as(feat)
@@ -20,7 +20,7 @@ def _gather_feat(feat, ind, mask=None):
     return feat
 
 def _tranpose_and_gather_feat(feat, ind):
-    feat = feat.permute(0, 2, 3, 1).contiguous()
+    feat = feat.permute(0, 2, 3, 1).contiguous() #이 순서대로 feat를 짤 것.
     feat = feat.view(feat.size(0), -1, feat.size(3))
     feat = _gather_feat(feat, ind)
     return feat

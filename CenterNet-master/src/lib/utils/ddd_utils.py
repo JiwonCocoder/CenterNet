@@ -18,8 +18,9 @@ def compute_box_3d(dim, location, rotation_y):
   z_corners = [w/2, -w/2, -w/2, w/2, w/2, -w/2, -w/2, w/2]
 
   corners = np.array([x_corners, y_corners, z_corners], dtype=np.float32)
-  corners_3d = np.dot(R, corners) 
-  corners_3d = corners_3d + np.array(location, dtype=np.float32).reshape(3, 1)
+  corners_3d = np.dot(R, corners)  #R_rot *x_ref_coord(camera_coordinate에서의 좌표값들)
+  temp = np.array(location, dtype=np.float32).reshape(3, 1)
+  corners_3d = corners_3d + np.array(location, dtype=np.float32).reshape(3, 1) #camera좌표 (0,0)에서 시작했었으니까, 물체 center point로 평행이동시킴
   return corners_3d.transpose(1, 0)
 
 def project_to_image(pts_3d, P):
@@ -27,7 +28,7 @@ def project_to_image(pts_3d, P):
   # P: 3 x 4
   # return: n x 2
   pts_3d_homo = np.concatenate(
-    [pts_3d, np.ones((pts_3d.shape[0], 1), dtype=np.float32)], axis=1)
+    [pts_3d, np.ones((pts_3d.shape[0], 1), dtype=np.float32)], axis=1) #homo_coord를 만드는 과정: (x,y,z,1)로
   pts_2d = np.dot(P, pts_3d_homo.transpose(1, 0)).transpose(1, 0)
   pts_2d = pts_2d[:, :2] / pts_2d[:, 2:]
   # import pdb; pdb.set_trace()
@@ -47,16 +48,16 @@ def compute_orientation_3d(dim, location, rotation_y):
   return orientation_3d.transpose(1, 0)
 
 def draw_box_3d(image, corners, c=(0, 0, 255)):
-  face_idx = [[0,1,5,4],
-              [1,2,6, 5],
-              [2,3,7,6],
-              [3,0,4,7]]
+  face_idx = [[0,1,5,4], #앞
+              [1,2,6, 5], #왼
+              [2,3,7,6],  #뒤
+              [3,0,4,7]] #오
   for ind_f in range(3, -1, -1):
     f = face_idx[ind_f]
     for j in range(4):
       cv2.line(image, (corners[f[j], 0], corners[f[j], 1]),
                (corners[f[(j+1)%4], 0], corners[f[(j+1)%4], 1]), c, 2, lineType=cv2.LINE_AA)
-    if ind_f == 0:
+    if ind_f == 0: #암면에 대해서는 대각선으로 표시
       cv2.line(image, (corners[f[0], 0], corners[f[0], 1]),
                (corners[f[2], 0], corners[f[2], 1]), c, 1, lineType=cv2.LINE_AA)
       cv2.line(image, (corners[f[1], 0], corners[f[1], 1]),

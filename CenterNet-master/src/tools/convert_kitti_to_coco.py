@@ -7,7 +7,8 @@ import json
 import numpy as np
 import cv2
 DATA_PATH = '../../data/kitti/'
-DEBUG = False
+#DEBUG = False
+DEBUG = True
 # VAL_PATH = DATA_PATH + 'training/label_val/'
 import os
 SPLITS = ['3dop', 'subcnn'] 
@@ -47,7 +48,7 @@ def _bbox_to_coco_bbox(bbox):
 def read_clib(calib_path):
   f = open(calib_path, 'r')
   for i, line in enumerate(f):
-    if i == 2: #P2에 대해서 \n제거하고, 맨 앞꺼(P2)빼고 나머지 값들을 배열로
+    if i == 2: #P2에 대해서 \n제거하고, 맨 앞 item(P2)이름빼고, 빼고 나머지 값들을 배열로
       calib = np.array(line[:-1].split(' ')[1:], dtype=np.float32)
       calib = calib.reshape(3, 4) #그냥 앞에서부터 순서대로 잘라서 넣는다.
       return calib
@@ -83,7 +84,7 @@ for SPLIT in SPLITS:
     for line in image_set: #train.txt에 있는 line을 str로 하나씩 읽어들임
       if line[-1] == '\n': #line(str)의 마지막에 \n있으면 빼주고.
         line = line[:-1]
-      image_id = int(line)
+      image_id = int(line) #ex.000003 → 0
       calib_path = calib_dir.format(calib_type[split]) + '{}.txt'.format(line)
       calib = read_clib(calib_path)
       image_info = {'file_name': '{}.png'.format(line),
@@ -126,7 +127,7 @@ for SPLIT in SPLITS:
         ret['annotations'].append(ann)
         if DEBUG and tmp[0] != 'DontCare':
           box_3d = compute_box_3d(dim, location, rotation_y)
-          box_2d = project_to_image(box_3d, calib)
+          box_2d = project_to_image(box_3d, calib) #이제 3d bounding box를 image에 투영시킴
           # print('box_2d', box_2d)
           image = draw_box_3d(image, box_2d)
           x = (bbox[0] + bbox[2]) / 2

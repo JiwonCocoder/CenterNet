@@ -19,6 +19,7 @@ def demo(opt):
   opt.debug = max(opt.debug, 1)
   Detector = detector_factory[opt.task]
   detector = Detector(opt)
+  f = open("fps.txt", 'w') #fps_write
 
   if opt.demo == 'webcam' or \
     opt.demo[opt.demo.rfind('.') + 1:].lower() in video_ext:
@@ -34,8 +35,10 @@ def demo(opt):
           time_str = time_str + '{} {:.3f}s |'.format(stat, ret[stat])
         print(time_str)
         print("FPS: ", 1.0 / (time.time() - start_time))  # FPS = 1 / time to process loop
+        f.write(str(1.0 / (time.time() - start_time))+'\n') #fps_write
         if cv2.waitKey(1) == 27:
             return  # esc to quit
+    f.close()
   else:
     if os.path.isdir(opt.demo):
       image_names = []

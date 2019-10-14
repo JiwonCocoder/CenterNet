@@ -35,7 +35,7 @@ class KITTI(data.Dataset):
     self.max_objs = 50
     self.class_name = [
       '__background__', 'Pedestrian', 'Car', 'Cyclist']
-    self.cat_ids = {1:0, 2:1, 3:2, 4:-3, 5:-3, 6:-2, 7:-99, 8:-99, 9:-1}
+    self.cat_ids = {1:0, 2:1, 3:2, 4:-3, 5:-3, 6:-2, 7:-99, 8:-99, 9:-1} # key : value
     
     self._data_rng = np.random.RandomState(123)
     self._eig_val = np.array([0.2141788, 0.01817699, 0.00341571],
@@ -52,7 +52,7 @@ class KITTI(data.Dataset):
     print('==> initializing kitti {}, {} data.'.format(opt.kitti_split, split))
     self.coco = coco.COCO(self.annot_path)
     self.images = self.coco.getImgIds()
-    self.num_samples = len(self.images)
+    self.num_samples = len(self.images) #100개
 
     print('Loaded {} {} samples'.format(split, self.num_samples))
 

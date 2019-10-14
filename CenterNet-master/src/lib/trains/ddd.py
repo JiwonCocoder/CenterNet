@@ -12,7 +12,7 @@ from utils.debugger import Debugger
 from utils.post_process import ddd_post_process
 from utils.oracle_utils import gen_oracle_map
 from .base_trainer import BaseTrainer
-
+import pdb
 class DddLoss(torch.nn.Module):
   def __init__(self, opt):
     super(DddLoss, self).__init__()
@@ -36,14 +36,15 @@ class DddLoss(torch.nn.Module):
           batch['dep'].detach().cpu().numpy(), 
           batch['ind'].detach().cpu().numpy(), 
           opt.output_w, opt.output_h)).to(opt.device)
-      
+
       hm_loss += self.crit(output['hm'], batch['hm']) / opt.num_stacks
+
       if opt.dep_weight > 0:
-        #depth
+        #depth : L1 Loss
         dep_loss += self.crit_reg(output['dep'], batch['reg_mask'],
                                   batch['ind'], batch['dep']) / opt.num_stacks
       if opt.dim_weight > 0:
-        #3D dimension
+        #3D dimension : L1 Loss
         dim_loss += self.crit_reg(output['dim'], batch['reg_mask'],
                                   batch['ind'], batch['dim']) / opt.num_stacks
       if opt.rot_weight > 0:

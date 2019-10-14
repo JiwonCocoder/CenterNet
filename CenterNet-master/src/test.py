@@ -97,11 +97,17 @@ def test(opt):
   bar = Bar('{}'.format(opt.exp_id), max=num_iters)
   time_stats = ['tot', 'load', 'pre', 'net', 'dec', 'post', 'merge']
   avg_time_stats = {t: AverageMeter() for t in time_stats}
+
+  f = open("fps_test.txt", 'w') #fps_write
+
   for ind in range(num_iters):
     img_id = dataset.images[ind]
     img_info = dataset.coco.loadImgs(ids=[img_id])[0]
     img_path = os.path.join(dataset.img_dir, img_info['file_name'])
     print(img_path)
+
+    #print fps
+    start_time = time.time()
 
     if opt.task == 'ddd':
       ret = detector.run(img_path, img_info['calib'])
@@ -116,9 +122,12 @@ def test(opt):
       avg_time_stats[t].update(ret[t])
       Bar.suffix = Bar.suffix + '|{} {:.3f} '.format(t, avg_time_stats[t].avg)
     bar.next()
+
+    f.write(str(1.0 / (time.time() - start_time)) + '\n')  # fps_write
+
   bar.finish()
   dataset.run_eval(results, opt.save_dir)
-
+  #print("FPS: ", 1.0 / (time.time() - start_time))  # FPS = 1 / time to process loop
 if __name__ == '__main__':
   opt = opts().parse()
   if opt.not_prefetch_test:

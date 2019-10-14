@@ -40,7 +40,7 @@ class DddDataset(data.Dataset):
     if self.opt.keep_res:
       s = np.array([self.opt.input_w, self.opt.input_h], dtype=np.int32)
     else:
-      s = np.array([width, height], dtype=np.int32)
+      s = np.array([width, height], dtype=np.int32) #그때끄때마다 다른상황.
     
     aug = False
     if self.split == 'train' and np.random.random() < self.opt.aug_ddd:
@@ -53,7 +53,7 @@ class DddDataset(data.Dataset):
       #center 이동시키고
       c[0] += img.shape[1] * np.clip(np.random.randn()*cf, -2*cf, 2*cf)
       c[1] += img.shape[0] * np.clip(np.random.randn()*cf, -2*cf, 2*cf)
-    trans_input = get_affine_transform(
+    trans_input = get_affine_transform( # scale만큼 크기를 바꿔주고, rot만큼 회전시키고,
       c, s, 0, [self.opt.input_w, self.opt.input_h])
     inp = cv2.warpAffine(img, trans_input, 
                          (self.opt.input_w, self.opt.input_h),
@@ -68,7 +68,7 @@ class DddDataset(data.Dataset):
     inp = inp.transpose(2, 0, 1) #WHC to CWH
 
     num_classes = self.opt.num_classes
-    #trans_output도 동일하게 affine_transform을 시켜줌.
+    #trans_output도 동일하게 affine_transform을 시켜줌. 들어온 input size를 output size로 바꾸어주는 어파일 행렬을 만듬
     trans_output = get_affine_transform(
       c, s, 0, [self.opt.output_w, self.opt.output_h])
    #opt.output크기를 내가 보고 싶어서
@@ -126,10 +126,13 @@ class DddDataset(data.Dataset):
           else:
             for cc in ignore_id:
               draw_gaussian(hm[cc], ct, radius)
-            hm[ignore_id, ct_int[1], ct_int[0]] = 0.9999
+           # hm[ignore_id, ct_int[1], ct_int[0]] = 0.9999
           continue
        #heatmap의 center에다가 가우시안 필터를 씌워줌
         draw_gaussian(hm[cls_id], ct, radius)
+        a = np.where(hm[0]==1)
+        b = np.where(hm[1] ==1)
+        c = np.where(hm[2] == 1)
         wh[k] = 1. * w, 1. * h #h랑 w는 box size이다. 따라서 max_object(제한)된 곳에 쌓아둠.
         #gt_det라는 list에다가 3d obj detector에 필요한 일자들을 넣어줌.
         #center [x, y ,1], orientation, depth, diemsion(w,h,1을 배열로 만들고, 그걸 list로 만들어서 이 모든 걸 하나의 원소로 넣어줌
@@ -138,7 +141,7 @@ class DddDataset(data.Dataset):
                       self._alpha_to_8(self._convert_alpha(ann['alpha'])) + \
                       [ann['depth']] + (np.array(ann['dim']) / 1).tolist() + [cls_id])
         if self.opt.reg_bbox:
-          #가장 마지막 gt_det에 대해서 cls_id만을 제외한 원소값들을 사용하는데, 거기다라 [w,h] 를 붙인다음에 마지막에 cls_id가 오도록.
+          #가장 마지막 gt_det에 대해서 cls_id만을 제외한 원소값들을 사용하는데, 거기다가 [w,h] 를 붙인다음에 마지막에 cls_id가 오도록.
           gt_det[-1] = gt_det[-1][:-1] + [w, h] + [gt_det[-1][-1]]
         # if (not self.opt.car_only) or cls_id == 1: # Only estimate ADD for cars !!!
         #indicator function : 아마 물체가 있따면

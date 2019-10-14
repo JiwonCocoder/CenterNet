@@ -28,7 +28,10 @@ class DddDetector(BaseDetector):
 
 
   def pre_process(self, image, scale, calib=None):
-    height, width = image.shape[0:2]
+    #height, width = image.shape[0:2]
+    #change_point
+    height, width = int(1280), int(384)
+    #original(1280, 384) → network input(1280, 384)
     #original(1280, 384) → network input(1280, 384)
     inp_height, inp_width = self.opt.input_h, self.opt.input_w
     c = np.array([width / 2, height / 2], dtype=np.float32)
@@ -102,6 +105,6 @@ class DddDetector(BaseDetector):
     debugger.add_3d_detection(
       image, results, self.this_calib,
       center_thresh=self.opt.vis_thresh, img_id='add_pred')
-    debugger.add_bird_view(
-      results, center_thresh=self.opt.vis_thresh, img_id='bird_pred')
+    #debugger.add_bird_view(
+     # results, center_thresh=self.opt.vis_thresh, img_id='bird_pred')
     debugger.show_all_imgs(pause=self.pause)
