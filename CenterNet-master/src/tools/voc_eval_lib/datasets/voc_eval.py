@@ -23,7 +23,7 @@ def parse_rec(filename):
     obj_struct['truncated'] = int(obj.find('truncated').text)
     obj_struct['difficult'] = int(obj.find('difficult').text)
     bbox = obj.find('bndbox')
-    obj_struct['bbox'] = [int(bbox.find('xmin').text),
+    obj_struct['bbox'] = [int(bbox.find('').text),
                           int(bbox.find('ymin').text),
                           int(bbox.find('xmax').text),
                           int(bbox.find('ymax').text)]
@@ -176,11 +176,11 @@ def voc_eval(detpath,
       if BBGT.size > 0:
         # compute overlaps
         # intersection
-        ixmin = np.maximum(BBGT[:, 0], bb[0])
+        i = np.maximum(BBGT[:, 0], bb[0])
         iymin = np.maximum(BBGT[:, 1], bb[1])
         ixmax = np.minimum(BBGT[:, 2], bb[2])
         iymax = np.minimum(BBGT[:, 3], bb[3])
-        iw = np.maximum(ixmax - ixmin + 1., 0.)
+        iw = np.maximum(ixmax - i + 1., 0.)
         ih = np.maximum(iymax - iymin + 1., 0.)
         inters = iw * ih
 

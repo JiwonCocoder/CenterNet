@@ -6,6 +6,7 @@ import pickle
 import json
 import numpy as np
 import cv2
+import math
 DATA_PATH = '../../data/kitti/'
 #DEBUG = False
 DEBUG = True
@@ -126,6 +127,7 @@ for SPLIT in SPLITS:
                'rotation_y': rotation_y}
         ret['annotations'].append(ann)
         if DEBUG and tmp[0] != 'DontCare':
+          print("rotation_y:" + str(rotation_y) + "각도는" + str(rotation_y * 180/math.pi))
           box_3d = compute_box_3d(dim, location, rotation_y)
           box_2d = project_to_image(box_3d, calib) #이제 3d bounding box를 image에 투영시킴
           # print('box_2d', box_2d)

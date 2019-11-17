@@ -97,7 +97,7 @@ class DddDataset(data.Dataset):
     gt_det = []
     for k in range(num_objs):
       ann = anns[k]
-      #bbox: 이제가 우리가 아는 (xmin, ymin, xmax, ymax)로 이루어진 행렬
+      #bbox: 이제가 우리가 아는 (, ymin, xmax, ymax)로 이루어진 행렬
       bbox = self._coco_box_to_bbox(ann['bbox'])
       cls_id = int(self.cat_ids[ann['category_id']])
       if cls_id <= -99:
