@@ -211,6 +211,7 @@ for SPLIT in SPLITS:
                     # print('box_2d', box_2d)
 
                     image = draw_box_3d(image, box_2d)
+
                     # x = (bbox[0] + bbox[2]) / 2
                     '''
                     print('rot_y, alpha2rot_y, dlt', tmp[0], 

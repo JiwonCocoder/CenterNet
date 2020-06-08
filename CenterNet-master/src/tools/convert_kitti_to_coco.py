@@ -68,6 +68,7 @@ CALIB = np.array([[F, 0, W / 2, EXT[0]], [0, F, H / 2, EXT[1]],
 cat_info = [] #list형. 원소들은 dict형 - name: cat명, id: 그 cat명의 index
 for i, cat in enumerate(cats):
   cat_info.append({'name': cat, 'id': i + 1})
+print(cat_info)
 #network에 맞는 dir를 찾아가도록 추가해줌.
 for SPLIT in SPLITS:
   image_set_path = DATA_PATH + 'ImageSets_{}/'.format(SPLIT)
@@ -125,6 +126,8 @@ for SPLIT in SPLITS:
                'occluded': occluded,
                'location': location,
                'rotation_y': rotation_y}
+        print("ann")
+        print(ann)
         ret['annotations'].append(ann)
         if DEBUG and tmp[0] != 'DontCare':
           print("rotation_y:" + str(rotation_y) + "각도는" + str(rotation_y * 180/math.pi))
