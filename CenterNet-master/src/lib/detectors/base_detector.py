@@ -7,7 +7,7 @@ import numpy as np
 from progress.bar import Bar
 import time
 import torch
-
+import os
 from models.model import create_model, load_model
 from utils.image import get_affine_transform
 from utils.debugger import Debugger
@@ -19,7 +19,7 @@ class BaseDetector(object):
       opt.device = torch.device('cuda')
     else:
       opt.device = torch.device('cpu')
-    
+
     print('Creating model...')
     self.model = create_model(opt.arch, opt.heads, opt.head_conv)
     self.model = load_model(self.model, opt.load_model)
@@ -60,8 +60,8 @@ class BaseDetector(object):
     if self.opt.flip_test:
       images = np.concatenate((images, images[:, :, :, ::-1]), axis=0)
     images = torch.from_numpy(images)
-    meta = {'c': c, 's': s, 
-            'out_height': inp_height // self.opt.down_ratio, 
+    meta = {'c': c, 's': s,
+            'out_height': inp_height // self.opt.down_ratio,
             'out_width': inp_width // self.opt.down_ratio}
     return images, meta
 
@@ -73,38 +73,55 @@ class BaseDetector(object):
 
   def merge_outputs(self, detections):
     raise NotImplementedError
-
+  #origin
   def debug(self, debugger, images, dets, output, scale=1):
     raise NotImplementedError
 
   def show_results(self, debugger, image, results):
-   raise NotImplementedError
+    raise NotImplementedError
+
+  def read_clib(calib_path):
+    f = open(calib_path, 'r')
+    for i, line in enumerate(f):
+      # if i == 2:  # P2에 대해서 \n제거하고, 맨 앞 item(P2)이름빼고, 빼고 나머지 값들을 배열로
+      # calib = np.array(line[:-1].split(' ')[1:], dtype=np.float32)
+      line = line[1:-1].split(',')
+      calib = np.array(line, dtype=np.float32)
+      calib = calib.reshape(3, 4)  # 그냥 앞에서부터 순서대로 잘라서 넣는다.
+      return calib
 
   def run(self, image_or_path_or_tensor, meta=None):
     load_time, pre_time, net_time, dec_time, post_time = 0, 0, 0, 0, 0
     merge_time, tot_time = 0, 0
     debugger = Debugger(dataset=self.opt.dataset, ipynb=(self.opt.debug==3),
                         theme=self.opt.debugger_theme)
+
+
+
     start_time = time.time()
     pre_processed = False
     if isinstance(image_or_path_or_tensor, np.ndarray):
       image = image_or_path_or_tensor
-    elif type(image_or_path_or_tensor) == type (''): 
+    elif type(image_or_path_or_tensor) == type (''):
       image = cv2.imread(image_or_path_or_tensor)
     else:
       image = image_or_path_or_tensor['image'][0].numpy()
       pre_processed_images = image_or_path_or_tensor
       pre_processed = True
-    
+
     loaded_time = time.time()
     load_time += (loaded_time - start_time)
-    
+
     detections = []
     for scale in self.scales:
       scale_start_time = time.time()
       if not pre_processed:
-        print("herehere")
-        images, meta = self.pre_process(image, scale, meta) #meta는 c,s, output, calib 정보가 들어있음
+        print("no pre_processed")
+        # intrinsic =[338.158, 0, 319.077, 0, 0, 338.158, 242.885, 0, 0, 0, 1, 0] #depth
+        intrinsic = [614.678, 0, 318.892, 0, 0, 614.93, 240.121, 0, 0, 0, 1, 0]
+        calib = np.array(intrinsic, dtype = np.float32)
+        calib = calib.reshape(3,4)
+        images, meta = self.pre_process(image, scale, calib)
       else:
         # import pdb; pdb.set_trace()
         images = pre_processed_images['images'][scale][0]
@@ -114,24 +131,25 @@ class BaseDetector(object):
       torch.cuda.synchronize()
       pre_process_time = time.time()
       pre_time += pre_process_time - scale_start_time
-      
+
       output, dets, forward_time = self.process(images, return_time=True)
 
       torch.cuda.synchronize()
       net_time += forward_time - pre_process_time
       decode_time = time.time()
       dec_time += decode_time - forward_time
-      
+
+
       if self.opt.debug >= 2:
         self.debug(debugger, images, dets, output, scale)
-      
+
       dets = self.post_process(dets, meta, scale)
       torch.cuda.synchronize()
       post_process_time = time.time()
       post_time += post_process_time - decode_time
 
       detections.append(dets)
-    
+
     results = self.merge_outputs(detections)
     torch.cuda.synchronize()
     end_time = time.time()
@@ -139,8 +157,9 @@ class BaseDetector(object):
     tot_time += end_time - start_time
 
     if self.opt.debug >= 1:
-      self.show_results(debugger, image, results)
-    
+      image_id = str(1234321)
+      self.show_results(debugger, image, results, image_id)
+
     return {'results': results, 'tot': tot_time, 'load': load_time,
             'pre': pre_time, 'net': net_time, 'dec': dec_time,
             'post': post_time, 'merge': merge_time}

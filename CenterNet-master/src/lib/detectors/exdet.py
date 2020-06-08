@@ -129,4 +129,4 @@ class ExdetDetector(BaseDetector):
       for bbox in results[j]:
         if bbox[4] > self.opt.vis_thresh:
           debugger.add_coco_bbox(bbox[:4], j - 1, bbox[4], img_id='exdet')
-    debugger.show_all_imgs(pause=self.pause)
+    #debugger.show_all_imgs(pause=self.pause)
